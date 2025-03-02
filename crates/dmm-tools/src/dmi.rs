@@ -176,15 +176,22 @@ impl Image {
     }
 
     #[cfg(feature = "png")]
-    pub fn to_write<W: std::io::Write>(&self, writer: W) -> io::Result<()> {
+    pub fn to_write<W: std::io::Write>(&self, mut writer: W) -> io::Result<()> {
+        let png_data = bytemuck::cast_slice(self.data.as_slice().unwrap());
+        let mut buffer = Vec::new();
+
         {
-            let mut encoder = png::Encoder::new(writer, self.width, self.height);
-            encoder.set_color(::png::ColorType::Rgba);
-            encoder.set_depth(::png::BitDepth::Eight);
-            let mut writer = encoder.write_header()?;
-            // TODO: metadata with write_chunk()
-            writer.write_image_data(bytemuck::cast_slice(self.data.as_slice().unwrap()))?;
+            let mut temp_encoder = png::Encoder::new(&mut buffer, self.width, self.height);
+            temp_encoder.set_color(::png::ColorType::Rgba);
+            temp_encoder.set_depth(::png::BitDepth::Eight);
+            let mut temp_writer = temp_encoder.write_header()?;
+            temp_writer.write_image_data(png_data)?;
         }
+
+        let optimized_png = oxipng::optimize_from_memory(&buffer, &oxipng::Options::default())
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+        writer.write_all(&optimized_png)?;
         Ok(())
     }
 
@@ -216,7 +223,8 @@ impl Image {
 
     #[cfg(feature = "png")]
     pub fn to_file(&self, path: &Path) -> io::Result<()> {
-        self.to_write(std::fs::File::create(path)?)
+        let file = std::fs::File::create(path)?;
+        self.to_write(file)
     }
 
     #[cfg(feature = "png")]

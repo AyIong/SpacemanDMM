@@ -547,9 +547,11 @@ impl RenderPass for BandaStationMods {
         if subpath(path, "/obj/") {
             let exceptions = [
                 "/obj/effect/spawner/structure/window",
+                "/obj/structure/window",
                 "/obj/structure/lattice",
                 "/obj/structure/grille",
                 "/obj/structure/girder",
+                "/obj/machinery/door",
                 "/obj/effect/turf_decal/tile",
                 "/obj/effect/turf_decal/line",
                 "/obj/effect/turf_decal/trimline",

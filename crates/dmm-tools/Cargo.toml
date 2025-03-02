@@ -14,6 +14,7 @@ indexmap = "2.6.0"
 foldhash = "0.1.3"
 either = "1.13.0"
 image = "0.25.5"
+oxipng = "9.1.4"
 
 [dependencies.bytemuck]
 version = "1.19.0"
