@@ -188,6 +188,32 @@ impl Image {
         Ok(())
     }
 
+    pub fn resize(&self, width: u32, height: u32) -> io::Result<Image> {
+        use image::{ImageBuffer, DynamicImage};
+
+        let raw_data: Vec<u8> = self.data.iter().flat_map(|px| [px.r, px.g, px.b, px.a]).collect();
+
+        let buffer = ImageBuffer::from_raw(self.width, self.height, raw_data)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Invalid image buffer"))?;
+
+        let new_img = DynamicImage::ImageRgba8(buffer).thumbnail_exact(width, height);
+        let raw_resized = new_img.into_rgba8().into_raw();
+
+        let resized_data: Vec<Rgba8> = raw_resized
+            .chunks_exact(4)
+            .map(|c| Rgba8::new(c[0], c[1], c[2], c[3]))
+            .collect();
+
+        let new_array = Array2::from_shape_vec((height as usize, width as usize), resized_data)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        Ok(Image {
+            width,
+            height,
+            data: new_array,
+        })
+    }
+
     #[cfg(feature = "png")]
     pub fn to_file(&self, path: &Path) -> io::Result<()> {
         self.to_write(std::fs::File::create(path)?)

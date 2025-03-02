@@ -13,6 +13,7 @@ lodepng = "3.10.7"
 indexmap = "2.6.0"
 foldhash = "0.1.3"
 either = "1.13.0"
+image = "0.25.5"
 
 [dependencies.bytemuck]
 version = "1.19.0"

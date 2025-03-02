@@ -116,6 +116,7 @@ pub const RENDER_PASSES: &[RenderPassInfo] = &[
     pass!(IconSmoothing, "icon-smoothing", "Emulate the icon smoothing subsystem (Rohesie, 2020).", true),
     pass!(SmartCables, "smart-cables", "Handle smart cable layout.", true),
     pass!(WiresAndPipes, "only-wires-and-pipes", "Renders only power cables and atmospheric pipes.", false),
+    pass!(BandaStationMods, "bs-mods", "All modifications for BandaStation go under here.", true),
 ];
 
 pub fn configure(renderer_config: &dm::config::MapRenderer, include: &str, exclude: &str) -> Vec<Box<dyn RenderPass>> {
@@ -536,5 +537,33 @@ impl FancyLayers {
         if let Some(layer) = self.fancy_layer_for_path(path) {
             sprite.layer = layer;
         }
+    }
+}
+
+#[derive(Default)]
+pub struct BandaStationMods;
+impl RenderPass for BandaStationMods {
+    fn path_filter(&self, path: &str) -> bool {
+        if subpath(path, "/obj/") {
+            let exceptions = [
+                "/obj/effect/spawner/structure/window",
+                "/obj/structure/lattice",
+                "/obj/structure/grille",
+                "/obj/structure/girder",
+                "/obj/effect/turf_decal/tile",
+                "/obj/effect/turf_decal/line",
+                "/obj/effect/turf_decal/trimline",
+            ];
+
+            if !exceptions.iter().any(|&p| subpath(path, p)) {
+                return false;
+            }
+        }
+
+        if subpath(path, "/mob/") {
+            return false
+        }
+
+        return true;
     }
 }

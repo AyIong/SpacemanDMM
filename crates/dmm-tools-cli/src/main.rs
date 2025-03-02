@@ -128,7 +128,7 @@ enum Command {
     #[command(name = "minimap")]
     Minimap {
         /// The output directory.
-        #[arg(short = 'o', default_value = "data/minimaps")]
+        #[arg(short = 'o', default_value = "data/nanomaps")]
         output: String,
 
         /// Set the minimum x,y or x,y,z coordinate to act upon (1-indexed, inclusive).
@@ -154,6 +154,14 @@ enum Command {
         /// Run output through optipng automatically. Requires optipng.
         #[arg(long = "optipng")]
         optipng: bool,
+
+        /// Target width. Anything below 1 gets ignored.
+        #[arg(short = 'w', default_value="0")]
+        width: u32,
+
+        /// Target height. Anything below 1 gets ignored.
+        #[arg(short = 'h', default_value="0")]
+        height: u32,
 
         /// The list of maps to process.
         files: Vec<String>,
@@ -218,7 +226,7 @@ fn run(opt: &Opt, command: &Command, context: &mut Context) {
         // --------------------------------------------------------------------
         Command::Minimap {
             ref output, min, max, ref enable, ref disable, ref files,
-            pngcrush, optipng,
+            pngcrush, optipng, width, height
         } => {
             context.objtree(opt);
             if context
@@ -290,18 +298,33 @@ fn run(opt: &Opt, command: &Command, context: &mut Context) {
                         errors: &errors,
                         bump: &bump,
                     };
-                    let image = minimap::generate(minimap_context, icon_cache).unwrap();
+                    let mut image = minimap::generate(minimap_context, icon_cache).unwrap();
                     if let Err(e) = std::fs::create_dir_all(output) {
                         eprintln!("Failed to create output directory {}:\n{}", output, e);
                         exit_status.fetch_add(1, Ordering::Relaxed);
                         return;
                     }
                     let outfile = format!(
-                        "{}/{}-{}.png",
+                        "{}/{}_nanomap_z{}.png",
                         output,
                         path.file_stem().unwrap().to_string_lossy(),
                         1 + z
                     );
+                    if width > 0 || height > 0 {
+                        let target_width = if width > 0 { width } else { image.width };
+                        let target_height = if height > 0 { height } else { image.height };
+                        if target_width != image.width || target_height != image.height {
+                            println!("{}resizing {} to {}x{}", prefix, outfile, target_width, target_height);
+                            image = match image.resize(target_width, target_height) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    eprintln!("Failed to resize: {}", e);
+                                    exit_status.fetch_add(1, Ordering::Relaxed);
+                                    return;
+                                },
+                            };
+                        }
+                    }
                     println!("{}saving {}", prefix, outfile);
                     image.to_file(outfile.as_ref()).unwrap();
                     if pngcrush {
