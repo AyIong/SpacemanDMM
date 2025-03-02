@@ -546,15 +546,16 @@ impl RenderPass for BandaStationMods {
     fn path_filter(&self, path: &str) -> bool {
         if subpath(path, "/obj/") {
             let exceptions = [
-                "/obj/effect/spawner/structure/window",
                 "/obj/structure/window",
                 "/obj/structure/lattice",
                 "/obj/structure/grille",
                 "/obj/structure/girder",
+                "/obj/structure/falsewall",
                 "/obj/machinery/door",
                 "/obj/effect/turf_decal/tile",
                 "/obj/effect/turf_decal/line",
                 "/obj/effect/turf_decal/trimline",
+                "/obj/effect/spawner/structure/window",
             ];
 
             if !exceptions.iter().any(|&p| subpath(path, p)) {
@@ -562,10 +563,45 @@ impl RenderPass for BandaStationMods {
             }
         }
 
+        if subpath(path, "/turf/") {
+            let removals = [
+                "/turf/open/genturf",
+                "/turf/closed/mineral",
+                "/turf/open/lava/plasma",
+                "/turf/open/floor/plating/snowed/icemoon",
+                "/turf/open/floor/plating/snowed/smoothed",
+                "/turf/open/cliff/snowrock",
+                "/turf/open/misc/asteroid",
+            ];
+
+            if removals.iter().any(|&p| subpath(path, p)) {
+                return false;
+            }
+        }
+
         if subpath(path, "/mob/") {
-            return false
+            return false;
         }
 
         return true;
+    }
+
+    // Replace falsewall with real one.
+    fn expand<'a>(&self,
+        atom: &Atom<'a>,
+        objtree: &'a ObjectTree,
+        output: &mut Vec<Atom<'a>>,
+    ) -> bool {
+        if !atom.istype("/obj/structure/falsewall/") {
+            return true;
+        }
+        match atom.get_var("walltype", objtree) {
+            Constant::Prefab(prefab) => {
+                let reference = dm::ast::FormatTreePath(&prefab.path).to_string();
+                output.push(Atom::from(objtree.expect(reference.as_str())));
+                false
+            }
+            _ => { true }
+        }
     }
 }
