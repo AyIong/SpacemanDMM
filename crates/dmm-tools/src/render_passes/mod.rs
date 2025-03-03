@@ -551,10 +551,9 @@ impl RenderPass for BandaStationMods {
                 "/obj/structure/grille",
                 "/obj/structure/girder",
                 "/obj/structure/falsewall",
+                "/obj/structure/platform",
                 "/obj/machinery/door",
-                "/obj/effect/turf_decal/tile",
-                "/obj/effect/turf_decal/line",
-                "/obj/effect/turf_decal/trimline",
+                "/obj/effect/turf_decal",
                 "/obj/effect/spawner/structure/window",
             ];
 
